@@ -154,6 +154,15 @@ void options_process_client(struct options_client *opts) {
         struct udp_header udp;
     } send_udp;
 
+    struct pseudo_header {
+        unsigned int source_address;
+        unsigned int dest_address;
+        unsigned char placeholder;
+        unsigned char protocol;
+        unsigned short udp_length;
+        struct udp_header udp;
+    } pseudo_header;
+
 
     if ((input = fopen(opts->file_name, "rb")) == NULL) {
         printf("I cannot open the file %s for reading\n", opts->file_name);
@@ -169,7 +178,7 @@ void options_process_client(struct options_client *opts) {
             send_udp.ip.ihl = 5;
             send_udp.ip.version = 4;
             send_udp.ip.tos = 0;
-            send_udp.ip.tot_len = htons(40);    // ip header(20), src_port(2), dst_port(2), udp_header_length(2), checksum(2)
+            send_udp.ip.tot_len = htons(28);    // ip header(20), udp_header(8)
 
             if (opts->ipid == 0)
                 send_udp.ip.id = (int) (255.0 * rand() / (RAND_MAX + 1.0));
@@ -199,7 +208,7 @@ void options_process_client(struct options_client *opts) {
             sin.sin_port = send_udp.udp.src_port;
 
 
-            opts->client_socket = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+            opts->client_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
             if (opts->client_socket == -1) {
                 printf( "socket() ERROR\n");
                 cleanup_client(opts);
@@ -207,7 +216,7 @@ void options_process_client(struct options_client *opts) {
             }
 
 
-            sendto(opts->client_socket, &send_udp, 8, 0, (struct sockaddr *)&sin, sizeof(sin));
+            sendto(opts->client_socket, &send_udp, 28, 0, (struct sockaddr *)&sin, sizeof(sin));
             printf("Sending Data: %c\n", ch);
 
             close(opts->client_socket);
@@ -250,7 +259,7 @@ uint16_t calc_ip_checksum(struct iphdr *ip_header) {
     while (sum >> 16) {
         sum = (sum & 0xFFFF) + (sum >> 16);
     }
-
+    printf("sum = %d\n", sum);
     return (uint16_t)~sum;
 }
 
@@ -258,7 +267,7 @@ uint16_t calc_ip_checksum(struct iphdr *ip_header) {
 uint16_t calc_udp_checksum(struct udp_header *udp_header) {
     uint32_t sum = 0;
     uint16_t *ptr = (uint16_t *)udp_header;
-    int count = ntohs(udp_header->length);
+    int count = udp_header->length;
 
     udp_header->checksum = 0;
 
@@ -268,10 +277,15 @@ uint16_t calc_udp_checksum(struct udp_header *udp_header) {
         count -= 2;
     }
 
+    if (count > 0) {
+        sum += *(uint8_t *)ptr;
+    }
+
     // Fold the 32-bit sum into 16 bits
     while (sum >> 16) {
         sum = (sum & 0xFFFF) + (sum >> 16);
     }
-    printf("%d", sum);
+//    printf("sum = %d\n", sum);
     return (uint16_t)~sum;
 }
+
