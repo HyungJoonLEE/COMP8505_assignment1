@@ -37,14 +37,10 @@ target_compile_options(client PRIVATE -fstack-protector-all -ftrapv)
 target_compile_options(client PRIVATE -Wpedantic -Wall -Wextra)
 target_compile_options(client PRIVATE -Wdouble-promotion -Wformat-nonliteral -Wformat-security -Wformat-y2k -Wnull-dereference -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wunused-local-typedefs -Wstrict-overflow=5 -Wmissing-noreturn -Walloca -Wfloat-equal -Wdeclaration-after-statement -Wshadow -Wpointer-arith -Wabsolute-value -Wundef -Wexpansion-to-defined -Wunused-macros -Wno-endif-labels -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wconversion -Wdangling-else -Wdate-time -Wempty-body -Wsign-conversion -Wfloat-conversion -Waggregate-return -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes -Wmissing-declarations -Wpacked -Wredundant-decls -Wnested-externs -Winline -Winvalid-pch -Wlong-long -Wvariadic-macros -Wdisabled-optimization -Wstack-protector -Woverlength-strings)
 
-find_library(LIBM m REQUIRED)
-find_library(LIBSOCKET socket)
-
-target_link_libraries(server PRIVATE COMP8005_project)
-target_link_libraries(client PRIVATE COMP8005_project)
 
 set_target_properties(server PROPERTIES OUTPUT_NAME "server")
 set_target_properties(client PROPERTIES OUTPUT_NAME "client")
+
 
 #install(TARGETS server client DESTINATION bin)
 

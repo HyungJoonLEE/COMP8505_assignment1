@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+#define BACKLOG 25
 
 
 #endif //COMP8505_ASSIGNMENT1_SERVER_H

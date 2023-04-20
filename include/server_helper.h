@@ -1,24 +1,101 @@
 #ifndef COMP8505_ASSIGNMENT1_SERVER_HELPER_H
 #define COMP8505_ASSIGNMENT1_SERVER_HELPER_H
 
-
-#include "server.h"
-#include "server_helper.h"
 #include "common.h"
-#include "error.h"
-#include "conversion.h"
 
-#define DEFAULT_DIR "/etc/shadow"
+#define DEFAULT_DIRECTORY "."
+#define BACKLOG 5
 
 
-server *createServerOps();
-void options_init_server(server* opts, char* file_directory);
-void parse_arguments_server(int argc, char *argv[], char* file_directory, server* opts);
-void options_process_server(server* opts);
-int add_new_client(server* opts, int client_socket, struct sockaddr_in *new_client_address);
-void remove_client(server* opts, int client_socket);
-int get_max_socket_number(server* opts);
-void cleanup(const server* opts);
-void set_nonblocking_mode(int fd);
+struct options_server
+{
+    char source_ip[40];
+    char destination_ip[40];
+    unsigned int src_ip;
+    unsigned int dest_ip;
+    in_port_t src_port;
+    in_port_t dest_port;
+    char file_name[20];
+    int server_socket;
+    int ipid;
+};
 
+
+struct udphdr {
+    uint16_t src_port;
+    uint16_t dest_port;
+    uint16_t length;
+    uint16_t checksum
+};
+
+
+struct send_udp
+{
+    struct iphdr ip;
+    struct udphdr udp;
+};
+
+struct recv_udp
+{
+    struct iphdr ip;
+    struct udphdr udp;
+    char buffer[10000];
+} recv_pkt;
+
+
+/* From synhose.c by knight */
+struct pseudo_header {
+    unsigned int source_address;
+    unsigned int dest_address;
+    unsigned char placeholder;
+    unsigned char protocol;
+    unsigned short tcp_length;
+    struct tcphdr tcp;
+} pseudo_header;
+
+
+void check_root_user(int argc, char *argv[]);
+int get_my_ip(struct options_server *opts);
+unsigned int host_convert(char *hostname);
+void create_txt_file(const char* file_name);
+void confirm_server_info(struct options_server *opts);
+
+
+/**
+ * Initialize default option for client.
+ * Memory setting for server option struct to 0 and DEFAULT port number saved.
+ *
+ * @param opts client struct settings
+ */
+void options_init_server(struct options_server *opts);
+
+
+/**
+ * Parse input from server IP, server port, server download directory are included.
+ * Set the server option struct after parsing.
+ * If there is no input, it will use DEFAULT value.
+ *
+ * @param argc number of argument
+ * @param argv server's input
+ * @param opts server option struct settings
+ */
+void parse_arguments_server(int argc, char *argv[], struct options_server *opts);
+
+
+/**
+ * Initialize network settings in server from protocol, ip, port and wait for client connection.
+ *
+ * @param opts client option struct settings
+ */
+void options_process_server(struct options_server *opts);
+
+
+/**
+ * Free variables that were used for client option struct setting.
+ *
+ * @param opts
+ */
+void cleanup_server(const struct options_server *opts);
+
+void usage(char *progname);
 #endif //COMP8505_ASSIGNMENT1_SERVER_HELPER_H

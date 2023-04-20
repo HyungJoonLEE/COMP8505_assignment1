@@ -1,8 +1,6 @@
 #ifndef COMP8005_ASSIGNMENT1_COMMON_H
 #define COMP8005_ASSIGNMENT1_COMMON_H
 
-#include <assert.h>
-#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,23 +14,29 @@
 #include <fcntl.h>
 #include <net/if.h>
 #include <netinet/in.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <strings.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
-#include <unistd.h>
 #include <sys/types.h>
-#include <sys/epoll.h>
-#include <pthread.h>
+#include <getopt.h>
+#include <ifaddrs.h>
+#include <netdb.h>
+#include <linux/ip.h>
+#include <netinet/tcp.h>
+#include <regex.h>
+
+
+
 
 
 #define BUF_SIZE 4096
-#define DEFAULT_PORT_SERVER 53000
+#define SOURCE_PORT 53000
+#define DESTINATION_PORT 55000
+#define DEFAULT_IPID 1
+
+#define DEFAULT_FILE_DIRECTORY "./"
 #define TRUE 1
 #define FALSE 0
 
