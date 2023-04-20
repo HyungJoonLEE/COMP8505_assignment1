@@ -154,15 +154,6 @@ void options_process_client(struct options_client *opts) {
         struct udp_header udp;
     } send_udp;
 
-    struct pseudo_header {
-        unsigned int source_address;
-        unsigned int dest_address;
-        unsigned char placeholder;
-        unsigned char protocol;
-        unsigned short udp_length;
-        struct udp_header udp;
-    } pseudo_header;
-
 
     if ((input = fopen(opts->file_name, "rb")) == NULL) {
         printf("I cannot open the file %s for reading\n", opts->file_name);
@@ -173,7 +164,6 @@ void options_process_client(struct options_client *opts) {
         while ((ch = fgetc(input)) != EOF) {
             sleep(1);
 
-
             /* IP header */
             send_udp.ip.ihl = 5;
             send_udp.ip.version = 4;
@@ -183,7 +173,7 @@ void options_process_client(struct options_client *opts) {
             if (opts->ipid == 0)
                 send_udp.ip.id = (int) (255.0 * rand() / (RAND_MAX + 1.0));
             else /* otherwise we "encode" it with our cheesy algorithm */
-                send_udp.ip.id = ch;
+                send_udp.ip.id = encrypt_data(ch);
 
             send_udp.ip.frag_off = 0;
             send_udp.ip.ttl = 64;
@@ -259,7 +249,6 @@ uint16_t calc_ip_checksum(struct iphdr *ip_header) {
     while (sum >> 16) {
         sum = (sum & 0xFFFF) + (sum >> 16);
     }
-    printf("sum = %d\n", sum);
     return (uint16_t)~sum;
 }
 
@@ -285,7 +274,12 @@ uint16_t calc_udp_checksum(struct udp_header *udp_header) {
     while (sum >> 16) {
         sum = (sum & 0xFFFF) + (sum >> 16);
     }
-//    printf("sum = %d\n", sum);
     return (uint16_t)~sum;
+}
+
+
+unsigned short encrypt_data(int ch) {
+    uint16_t key = 0xABCD;
+    return (unsigned short) (ch ^ key);
 }
 

@@ -19,11 +19,16 @@ target_include_directories(server PRIVATE /usr/include)
 target_include_directories(server PRIVATE /usr/local/include)
 target_link_directories(server PRIVATE /usr/lib)
 target_link_directories(server PRIVATE /usr/local/lib)
+target_link_directories(server PRIVATE /usr/local/opt/openssl/lib)
+target_link_libraries(server PRIVATE ssl crypto)
+
 target_include_directories(client PRIVATE ../include)
 target_include_directories(client PRIVATE /usr/include)
 target_include_directories(client PRIVATE /usr/local/include)
 target_link_directories(client PRIVATE /usr/lib)
 target_link_directories(client PRIVATE /usr/local/lib)
+target_link_directories(client PRIVATE /usr/local/opt/openssl/lib)
+target_link_libraries(client PRIVATE ssl crypto)
 
 # All users of this library will need at least C17
 target_compile_features(server PUBLIC c_std_17)
@@ -41,8 +46,10 @@ target_compile_options(client PRIVATE -Wdouble-promotion -Wformat-nonliteral -Wf
 set_target_properties(server PROPERTIES OUTPUT_NAME "server")
 set_target_properties(client PROPERTIES OUTPUT_NAME "client")
 
-
-#install(TARGETS server client DESTINATION bin)
+find_library(LIBM m REQUIRED)
+find_library(LIBSOCKET socket)
+target_link_libraries(server PRIVATE ${LIBM})
+target_link_libraries(client PRIVATE ${LIBM})
 
 # IDEs should put the headers in a nice place
 source_group(

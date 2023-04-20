@@ -36,6 +36,6 @@ void cleanup_client(const struct options_client *opts);
 uint16_t generate_random_port(void);
 uint16_t calc_ip_checksum(struct iphdr *ip_header);
 uint16_t calc_udp_checksum(struct udp_header *udp_header);
-void usage(char *progname);
+unsigned short encrypt_data(int ch);
 
 #endif //COMP8505_ASSIGNMENT1_CLIENT_HELPER_H

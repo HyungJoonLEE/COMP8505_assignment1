@@ -24,7 +24,8 @@ struct options_server
 int get_my_ip(struct options_server *opts);
 void create_txt_file(const char* file_name);
 void confirm_server_info(struct options_server *opts);
-void sigtstp_handler(int sig_num, struct options_server *opts);
+unsigned short decrypt_data(unsigned short ch);
+
 
 
 /**

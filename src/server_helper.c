@@ -197,8 +197,8 @@ void options_process_server(struct options_server *opts) {
                 /* IP ID header "decoding" */
                 /* The ID number is converted from it's ASCII equivalent back to normal */
                 if(opts->ipid == 1) {
-                    printf("Receiving Data: %c\n", recv_pkt.ip.id);
-                    fprintf(output,"%c", recv_pkt.ip.id);
+                    printf("Receiving Data: %c -> %c\n", recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
+                    fprintf(output,"%c", decrypt_data(recv_pkt.ip.id));
                     fflush(output);
                 }
             }
@@ -206,8 +206,8 @@ void options_process_server(struct options_server *opts) {
         else {
             if(ntohs(recv_pkt.udp.dest_port) == opts->src_port) {
                 if(opts->ipid == 1) {
-                    printf("Receiving Data: %c\n", recv_pkt.ip.id);
-                    fprintf(output,"%c", recv_pkt.ip.id);
+                    printf("Receiving Data: %c -> %c\n", recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
+                    fprintf(output,"%c", decrypt_data(recv_pkt.ip.id));
                     fflush(output);
                 }
             }
@@ -236,4 +236,8 @@ void create_txt_file(const char* file_name) {
 }
 
 
+unsigned short decrypt_data(unsigned short ch) {
+    uint16_t key = 0xABCD;
+    return ch ^ key;
+}
 

@@ -26,7 +26,7 @@
 #include <linux/ip.h>
 #include <netinet/tcp.h>
 #include <regex.h>
-
+#include <openssl/aes.h>
 
 
 
@@ -37,7 +37,6 @@
 
 #define TRUE 1
 #define FALSE 0
-
 
 void check_root_user(int argc, char *argv[]);
 unsigned int host_convert(char *hostname);
