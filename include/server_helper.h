@@ -21,44 +21,10 @@ struct options_server
 };
 
 
-struct udphdr {
-    uint16_t src_port;
-    uint16_t dest_port;
-    uint16_t length;
-    uint16_t checksum
-};
-
-
-struct send_udp
-{
-    struct iphdr ip;
-    struct udphdr udp;
-};
-
-struct recv_udp
-{
-    struct iphdr ip;
-    struct udphdr udp;
-    char buffer[10000];
-} recv_pkt;
-
-
-/* From synhose.c by knight */
-struct pseudo_header {
-    unsigned int source_address;
-    unsigned int dest_address;
-    unsigned char placeholder;
-    unsigned char protocol;
-    unsigned short tcp_length;
-    struct tcphdr tcp;
-} pseudo_header;
-
-
-void check_root_user(int argc, char *argv[]);
 int get_my_ip(struct options_server *opts);
-unsigned int host_convert(char *hostname);
 void create_txt_file(const char* file_name);
 void confirm_server_info(struct options_server *opts);
+void sigtstp_handler(int sig_num, struct options_server *opts);
 
 
 /**

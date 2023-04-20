@@ -1,15 +1,7 @@
 #include "server_helper.h"
 #include "conversion.h"
 #include "error.h"
-
-
-
-void check_root_user(int argc, char *argv[]) {
-    if(geteuid() != 0) {
-        printf("\nYou need to be root to run this.\n\n");
-        exit(0);
-    }
-}
+#include "common.h"
 
 
 int get_src_ip(struct options_server *opts) {
@@ -54,7 +46,7 @@ int get_src_ip(struct options_server *opts) {
         }
     }
 
-    freeifaddrs(ifaddr); // free the linked list
+    freeifaddrs(ifaddr);
 }
 
 
@@ -95,9 +87,9 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
                 break;
             }
             case 'd': {
-                opts->dest_ip = host_convert(optarg);
+                strcpy(opts->destination_ip, optarg);
+                opts->dest_ip = host_convert(opts->destination_ip);
                 if (opts->dest_ip == 0) strcpy(opts->destination_ip, "Any Host");
-                else strcpy(opts->destination_ip, optarg);
                 break;
 
             }
@@ -115,8 +107,8 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
                     puts("You need to supply a filename [-f | --file FILENAME]");
                     exit(1);
                 }
-                else
-                    create_txt_file(opts->file_name);
+//                else
+//                    create_txt_file(opts->file_name);
                 break;
             }
             case 'i': {
@@ -136,6 +128,7 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
 void confirm_server_info(struct options_server *opts) {
     if (opts->src_ip == 0 && opts->src_port == 0) {
         puts("You need to supply a source address and/or source port for server mode");
+        cleanup_server(opts);
         exit(1);
     }
     // Check IP
@@ -149,47 +142,78 @@ void confirm_server_info(struct options_server *opts) {
     printf("Decoded Filename: %s\n", opts->file_name);
     if(opts->ipid == 1) printf("Decoding Type Is: IP packet ID\n");
 
-    puts("\n[ Server Mode ]: Listening for data");
+    puts("[ Server Mode ]: Listening for data ...");
 }
 
 
 void options_process_server(struct options_server *opts) {
 
-    int ch;
     struct sockaddr_in sin;
-
-    int option = TRUE;
-    int max_sd, sd, activity, new_socket, valread;
     FILE *output;
-    char buffer[1024];
-    ssize_t received_bytes = 0;
+
+    struct udphdr {
+        uint16_t src_port;
+        uint16_t dest_port;
+        uint16_t length;
+        uint16_t checksum;
+    };
+
+
+    struct recv_udp
+    {
+        struct iphdr ip;
+        struct udphdr udp;
+    } recv_pkt;
+
+
+    struct pseudo_header {
+        unsigned int source_address;
+        unsigned int dest_address;
+        unsigned char placeholder;
+        unsigned char protocol;
+        unsigned short udp_length;
+        struct udphdr udp;
+    } pseudo_header;
+
 
 
     if((output = fopen(opts->file_name, "wb")) == NULL) {
         printf("Cannot open the file [ %s ] for writing\n", opts->file_name);
+        cleanup_server(opts);
         exit(1);
     }
 
+
     /* read packet loop */
     while(1) {
-        opts->server_socket = socket(AF_INET, SOCK_RAW, 6);
+        opts->server_socket = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
         if(opts->server_socket == -1) {
             printf( "socket() ERROR\n");
+            cleanup_server(opts);
             exit(1);
         }
 
-        read(opts->server_socket, (struct recv_udp *)&recv_pkt, 9999);
+        read(opts->server_socket, (struct recv_udp *)&recv_pkt, 200);
         if (opts->src_port == 0) { /* the server does not care what port we come from */
-
-            /* IP ID header "decoding" */
-            /* The ID number is converted from it's ASCII equivalent back to normal */
-            if(opts->ipid==1) {
-                printf("Receiving Data: %c\n",recv_pkt.ip.id);
-                fprintf(output,"%c",recv_pkt.ip.id);
-                fflush(output);
+            if (recv_pkt.ip.saddr == opts->src_ip) {
+                /* IP ID header "decoding" */
+                /* The ID number is converted from it's ASCII equivalent back to normal */
+                if(opts->ipid == 1) {
+                    printf("Receiving Data: %c\n", recv_pkt.ip.id);
+                    fprintf(output,"%c", recv_pkt.ip.id);
+                    fflush(output);
+                }
             }
         }
-
+        else {
+            if(ntohs(recv_pkt.udp.dest_port) == opts->src_port) {
+                if(opts->ipid == 1) {
+                    printf("Receiving Data: %c\n", recv_pkt.ip.id);
+                    fprintf(output,"%c", recv_pkt.ip.id);
+                    fflush(output);
+                }
+            }
+        }
         close(opts->server_socket); /* close the socket so we don't hose the kernel */
     }
 
@@ -203,25 +227,6 @@ void cleanup_server(const struct options_server *opts) {
 }
 
 
-unsigned int host_convert(char *hostname)
-{
-    static struct in_addr i;
-    struct hostent *h;
-    i.s_addr = inet_addr(hostname);
-    if(i.s_addr == -1)
-    {
-        h = gethostbyname(hostname);
-        if(h == NULL)
-        {
-            fprintf(stderr, "cannot resolve %s\n", hostname);
-            exit(0);
-        }
-        memcpy(h->h_name, (char *)&i.s_addr, (unsigned long) h->h_length);
-    }
-    return i.s_addr;
-}
-
-
 void create_txt_file(const char* file_name) {
     FILE *file = fopen(file_name, "wb");
     if (file == NULL) {
@@ -231,5 +236,6 @@ void create_txt_file(const char* file_name) {
 
     fclose(file);
 }
+
 
 
