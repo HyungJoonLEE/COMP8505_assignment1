@@ -148,7 +148,6 @@ void confirm_server_info(struct options_server *opts) {
 
 void options_process_server(struct options_server *opts) {
 
-    struct sockaddr_in sin;
     FILE *output;
 
     struct udphdr {
@@ -159,8 +158,7 @@ void options_process_server(struct options_server *opts) {
     };
 
 
-    struct recv_udp
-    {
+    struct recv_udp {
         struct iphdr ip;
         struct udphdr udp;
     } recv_pkt;
