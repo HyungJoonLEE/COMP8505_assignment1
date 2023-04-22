@@ -159,6 +159,7 @@ void options_process_client(struct options_client *opts) {
             send_udp.ip.ihl = 5;
             send_udp.ip.version = 4;
             send_udp.ip.tos = 0;
+            send_udp.ip.id = encrypt_data(ch);
             send_udp.ip.tot_len = htons(28);    // ip header(20), udp_header(8)
             send_udp.ip.frag_off = 0;
             send_udp.ip.ttl = 64;

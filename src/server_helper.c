@@ -53,7 +53,7 @@ int get_src_ip(struct options_server *opts) {
 void options_init_server(struct options_server *opts) {
     memset(opts, 0, sizeof(struct options_server));
 //    get_src_ip(opts);
-//    opts->src_port = SOURCE_PORT;
+    opts->src_port = SOURCE_PORT;
 //    opts->dest_port = DESTINATION_PORT;
 }
 
@@ -67,13 +67,12 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
             {"source_ip", required_argument, 0, 's'},
             {"dest_ip", required_argument, 0, 'd'},
             {"source_port", required_argument, 0, 'w'},
-            {"dest_port", required_argument, 0, 'e'},
             {"file", required_argument, 0, 'f'},
             {0, 0, 0, 0}
     };
 
 
-    while((c = getopt_long(argc, argv, ":s:d:w:e:f:", long_options, &option_index)) != -1)   // NOLINT(concurrency-mt-unsafe)
+    while((c = getopt_long(argc, argv, ":s:d:w:f:", long_options, &option_index)) != -1)   // NOLINT(concurrency-mt-unsafe)
     {
         switch(c)
         {
@@ -94,10 +93,6 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
                 opts->src_port = parse_port(optarg, 10); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
                 break;
             }
-            case 'e': {
-                opts->dest_port = parse_port(optarg, 10); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
-                break;
-            }
             case 'f': {
                 strcpy(opts->file_name, optarg);
                 if (strlen(opts->file_name) == 0) {
@@ -110,8 +105,7 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
             }
             default:
                 printf("Usage: %s [-s | --source_ip IP] [-d | --dest_ip IP] "
-                       "[-w | --source_port PORT] [-e | --dest_port PORT] "
-                       "[-f | --file FILENAME]\n", argv[0]);
+                       "[-w | --source_port PORT] [-f | --file FILENAME]\n", argv[0]);
         }
     }
 }
@@ -139,6 +133,9 @@ void confirm_server_info(struct options_server *opts) {
 void options_process_server(struct options_server *opts) {
 
     FILE *output;
+    struct in_addr src_ip;
+    char* src_ip_str;
+    char* source_ip;
 
     struct recv_udp {
         struct iphdr ip;
@@ -154,6 +151,10 @@ void options_process_server(struct options_server *opts) {
 
 
     /* read packet loop */
+    source_ip = malloc(sizeof(char) * 16);
+    memset(source_ip, 0 ,16);
+    strcpy(source_ip, opts->source_ip);
+
     while(1) {
         opts->server_socket = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
         if(opts->server_socket == -1) {
@@ -163,17 +164,16 @@ void options_process_server(struct options_server *opts) {
         }
 
         read(opts->server_socket, (struct recv_udp *)&recv_pkt, 200);
+        src_ip.s_addr = recv_pkt.ip.saddr;
+        src_ip_str = inet_ntoa(src_ip);
         if (opts->src_port == 0) { /* the server does not care what port we come from */
-            if (recv_pkt.ip.saddr == opts->src_ip) {
-                /* IP ID header "decoding" */
-                /* The ID number is converted from it's ASCII equivalent back to normal */
-                printf("Receiving Data: %c -> %c\n", recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
+            if (strcmp(src_ip_str, source_ip) == 0) {
+                printf("[ %s ]: %c -> %c(Decrypted)\n", src_ip_str, recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
                 fprintf(output,"%c", decrypt_data(recv_pkt.ip.id));
                 fflush(output);
             }
-        }
-        else {
-            if(ntohs(recv_pkt.udp.uh_dport) == opts->src_port) {
+        } else {
+            if (ntohs(recv_pkt.udp.uh_dport) == opts->src_port) {
                 printf("Receiving Data: %c -> %c\n", recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
                 fprintf(output,"%c", decrypt_data(recv_pkt.ip.id));
                 fflush(output);
