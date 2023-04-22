@@ -55,7 +55,6 @@ void options_init_server(struct options_server *opts) {
 //    get_src_ip(opts);
 //    opts->src_port = SOURCE_PORT;
 //    opts->dest_port = DESTINATION_PORT;
-    opts->ipid = DEFAULT_IPID;
 }
 
 
@@ -63,7 +62,6 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
 {
     int c;
     int option_index = 0;
-    char ipid[5] = {0};
 
     static struct option long_options[] = {
             {"source_ip", required_argument, 0, 's'},
@@ -71,12 +69,11 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
             {"source_port", required_argument, 0, 'w'},
             {"dest_port", required_argument, 0, 'e'},
             {"file", required_argument, 0, 'f'},
-            {"ipid", required_argument, 0, 'i'},
             {0, 0, 0, 0}
     };
 
 
-    while((c = getopt_long(argc, argv, ":s:d:w:e:f:i:", long_options, &option_index)) != -1)   // NOLINT(concurrency-mt-unsafe)
+    while((c = getopt_long(argc, argv, ":s:d:w:e:f:", long_options, &option_index)) != -1)   // NOLINT(concurrency-mt-unsafe)
     {
         switch(c)
         {
@@ -111,15 +108,10 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
 //                    create_txt_file(opts->file_name);
                 break;
             }
-            case 'i': {
-                strcpy(ipid, optarg);
-                opts->ipid = atoi(ipid);
-                break;
-            }
             default:
                 printf("Usage: %s [-s | --source_ip IP] [-d | --dest_ip IP] "
                        "[-w | --source_port PORT] [-e | --dest_port PORT] "
-                       "[-i | --ipid IPID] [-f | --file FILENAME]\n", argv[0]);
+                       "[-f | --file FILENAME]\n", argv[0]);
         }
     }
 }
@@ -140,8 +132,6 @@ void confirm_server_info(struct options_server *opts) {
 
 
     printf("Decoded Filename: %s\n", opts->file_name);
-    if(opts->ipid == 1) printf("Decoding Type Is: IP packet ID\n");
-
     puts("[ Server Mode ]: Listening for data ...");
 }
 
@@ -150,29 +140,10 @@ void options_process_server(struct options_server *opts) {
 
     FILE *output;
 
-    struct udphdr {
-        uint16_t src_port;
-        uint16_t dest_port;
-        uint16_t length;
-        uint16_t checksum;
-    };
-
-
     struct recv_udp {
         struct iphdr ip;
         struct udphdr udp;
     } recv_pkt;
-
-
-    struct pseudo_header {
-        unsigned int source_address;
-        unsigned int dest_address;
-        unsigned char placeholder;
-        unsigned char protocol;
-        unsigned short udp_length;
-        struct udphdr udp;
-    } pseudo_header;
-
 
 
     if((output = fopen(opts->file_name, "wb")) == NULL) {
@@ -196,20 +167,16 @@ void options_process_server(struct options_server *opts) {
             if (recv_pkt.ip.saddr == opts->src_ip) {
                 /* IP ID header "decoding" */
                 /* The ID number is converted from it's ASCII equivalent back to normal */
-                if(opts->ipid == 1) {
-                    printf("Receiving Data: %c -> %c\n", recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
-                    fprintf(output,"%c", decrypt_data(recv_pkt.ip.id));
-                    fflush(output);
-                }
+                printf("Receiving Data: %c -> %c\n", recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
+                fprintf(output,"%c", decrypt_data(recv_pkt.ip.id));
+                fflush(output);
             }
         }
         else {
-            if(ntohs(recv_pkt.udp.dest_port) == opts->src_port) {
-                if(opts->ipid == 1) {
-                    printf("Receiving Data: %c -> %c\n", recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
-                    fprintf(output,"%c", decrypt_data(recv_pkt.ip.id));
-                    fflush(output);
-                }
+            if(ntohs(recv_pkt.udp.uh_dport) == opts->src_port) {
+                printf("Receiving Data: %c -> %c\n", recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
+                fprintf(output,"%c", decrypt_data(recv_pkt.ip.id));
+                fflush(output);
             }
         }
         close(opts->server_socket); /* close the socket so we don't hose the kernel */

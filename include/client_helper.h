@@ -14,17 +14,7 @@ struct options_client
     in_port_t dest_port;
     char file_name[20];
     int client_socket;
-    int ipid;
 };
-
-
-struct udp_header {
-    uint16_t src_port;
-    uint16_t dest_port;
-    uint16_t length;
-    uint16_t checksum;
-};
-
 
 
 void create_txt_file(const char* file_name);
@@ -35,7 +25,7 @@ void options_process_client(struct options_client *opts);
 void cleanup_client(const struct options_client *opts);
 uint16_t generate_random_port(void);
 uint16_t calc_ip_checksum(struct iphdr *ip_header);
-uint16_t calc_udp_checksum(struct udp_header *udp_header);
+uint16_t calc_udp_checksum(struct udphdr *udp_header);
 unsigned short encrypt_data(int ch);
 
 #endif //COMP8505_ASSIGNMENT1_CLIENT_HELPER_H

@@ -54,14 +54,12 @@ void options_init_client(struct options_client *opts) {
 //    get_src_ip(opts);
 //    opts->src_port = SOURCE_PORT;
 //    opts->dest_port = DESTINATION_PORT;
-    opts->ipid = DEFAULT_IPID;
 }
 
 
 void parse_arguments_client(int argc, char *argv[], struct options_client *opts) {
     int c;
     int option_index = 0;
-    char ipid[5] = {0};
 
     static struct option long_options[] = {
             {"source_ip", required_argument, 0, 's'},
@@ -69,12 +67,11 @@ void parse_arguments_client(int argc, char *argv[], struct options_client *opts)
             {"source_port", required_argument, 0, 'w'},
             {"dest_port", required_argument, 0, 'e'},
             {"file", required_argument, 0, 'f'},
-            {"ipid", required_argument, 0, 'i'},
             {0, 0, 0, 0}
     };
 
 
-    while((c = getopt_long(argc, argv, ":s:d:w:e:f:i:", long_options, &option_index)) != -1)   // NOLINT(concurrency-mt-unsafe)
+    while((c = getopt_long(argc, argv, ":s:d:w:e:f:", long_options, &option_index)) != -1)   // NOLINT(concurrency-mt-unsafe)
     {
         switch(c)
         {
@@ -109,15 +106,10 @@ void parse_arguments_client(int argc, char *argv[], struct options_client *opts)
 //                    create_txt_file(opts->file_name);
                 break;
             }
-            case 'i': {
-                strcpy(ipid, optarg);
-                opts->ipid = atoi(ipid);
-                break;
-            }
             default:
                 printf("Usage: %s [-s | --source_ip IP] [-d | --dest_ip IP] "
                        "[-w | --source_port PORT] [-e | --dest_port PORT] "
-                       "[-i | --ipid IPID] [-f | --file FILENAME]\n", argv[0]);
+                       "[-f | --file FILENAME]\n", argv[0]);
         }
     }
 }
@@ -137,7 +129,6 @@ void confirm_client_info(struct options_client *opts) {
         else printf("Source Port:        %u\n",opts->src_port);
         printf("Destination Port:   %u\n", opts->dest_port);
         printf("Encoded Filename:   %s\n", opts->file_name);
-        if(opts->ipid == 1) puts("Encoding Type   : IP ID");
         puts("[ Client Mode ]: Sending data ...");
     }
 }
@@ -151,7 +142,7 @@ void options_process_client(struct options_client *opts) {
 
     struct send_udp {
         struct iphdr ip;
-        struct udp_header udp;
+        struct udphdr udp;
     } send_udp;
 
 
@@ -169,12 +160,6 @@ void options_process_client(struct options_client *opts) {
             send_udp.ip.version = 4;
             send_udp.ip.tos = 0;
             send_udp.ip.tot_len = htons(28);    // ip header(20), udp_header(8)
-
-            if (opts->ipid == 0)
-                send_udp.ip.id = (int) (255.0 * rand() / (RAND_MAX + 1.0));
-            else /* otherwise we "encode" it with our cheesy algorithm */
-                send_udp.ip.id = encrypt_data(ch);
-
             send_udp.ip.frag_off = 0;
             send_udp.ip.ttl = 64;
             send_udp.ip.protocol = IPPROTO_UDP;
@@ -185,17 +170,17 @@ void options_process_client(struct options_client *opts) {
 
             /* UDP header */
             if (opts->src_port == 0)
-                send_udp.udp.src_port = htons(generate_random_port());
+                send_udp.udp.uh_sport = htons(generate_random_port());
             else
-                send_udp.udp.src_port = htons(opts->src_port);
-            send_udp.udp.dest_port = htons(opts->dest_port);
-            send_udp.udp.length = htons(8);
-            send_udp.udp.checksum = calc_udp_checksum(&send_udp.udp);
+                send_udp.udp.uh_sport = htons(opts->src_port);
+            send_udp.udp.uh_dport = htons(opts->dest_port);
+            send_udp.udp.uh_ulen = htons(8);
+            send_udp.udp.uh_sum = calc_udp_checksum(&send_udp.udp);
 
 
             sin.sin_family = AF_INET;
             sin.sin_addr.s_addr = send_udp.ip.daddr;
-            sin.sin_port = send_udp.udp.src_port;
+            sin.sin_port = send_udp.udp.uh_sport;
 
 
             opts->client_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
@@ -253,12 +238,12 @@ uint16_t calc_ip_checksum(struct iphdr *ip_header) {
 }
 
 
-uint16_t calc_udp_checksum(struct udp_header *udp_header) {
+uint16_t calc_udp_checksum(struct udphdr *udp_header) {
     uint32_t sum = 0;
     uint16_t *ptr = (uint16_t *)udp_header;
-    int count = udp_header->length;
+    int count = udp_header->uh_ulen;
 
-    udp_header->checksum = 0;
+    udp_header->uh_sum = 0;
 
     // Calculate the checksum for the UDP header
     while (count > 1) {

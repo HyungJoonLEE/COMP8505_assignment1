@@ -23,17 +23,16 @@
 #include <getopt.h>
 #include <ifaddrs.h>
 #include <netdb.h>
-#include <linux/ip.h>
-#include <netinet/tcp.h>
+#include <netinet/udp.h>
 #include <regex.h>
 #include <openssl/aes.h>
+#include <netinet/ip.h>
 
 
 
 #define BUF_SIZE 4096
 #define SOURCE_PORT 53000
 #define DESTINATION_PORT 55000
-#define DEFAULT_IPID 1
 
 #define TRUE 1
 #define FALSE 0

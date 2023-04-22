@@ -17,7 +17,6 @@ struct options_server
     in_port_t dest_port;
     char file_name[20];
     int server_socket;
-    int ipid;
 };
 
 
