@@ -163,7 +163,7 @@ void options_process_server(struct options_server *opts) {
             exit(1);
         }
 
-        read(opts->server_socket, (struct recv_udp *)&recv_pkt, 200);
+        read(opts->server_socket, (struct recv_udp *)&recv_pkt, 43);
         src_ip.s_addr = recv_pkt.ip.saddr;
         src_ip_str = inet_ntoa(src_ip);
         if (opts->src_port == 0) { /* the server does not care what port we come from */
