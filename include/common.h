@@ -30,7 +30,6 @@
 
 
 
-#define BUF_SIZE 4096
 #define SOURCE_PORT 0
 #define DESTINATION_PORT 55000
 

@@ -3,16 +3,13 @@
 
 #include "common.h"
 
-#define DEFAULT_DIRECTORY "."
-#define BACKLOG 5
-
 
 struct options_server
 {
     char source_ip[40];
-    char destination_ip[40];
+//    char destination_ip[40];
     unsigned int src_ip;
-    unsigned int dest_ip;
+//    unsigned int dest_ip;
     in_port_t src_port;
     in_port_t dest_port;
     char file_name[20];
@@ -20,8 +17,6 @@ struct options_server
 };
 
 
-int get_my_ip(struct options_server *opts);
-void create_txt_file(const char* file_name);
 void confirm_server_info(struct options_server *opts);
 unsigned short decrypt_data(unsigned short ch);
 
@@ -54,14 +49,4 @@ void parse_arguments_server(int argc, char *argv[], struct options_server *opts)
  * @param opts client option struct settings
  */
 void options_process_server(struct options_server *opts);
-
-
-/**
- * Free variables that were used for client option struct setting.
- *
- * @param opts
- */
-void cleanup_server(const struct options_server *opts);
-
-void usage(char *progname);
 #endif //COMP8505_ASSIGNMENT1_SERVER_HELPER_H

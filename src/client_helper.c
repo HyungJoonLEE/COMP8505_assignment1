@@ -3,57 +3,9 @@
 #include "error.h"
 
 
-int get_src_ip(struct options_client *opts) {
-    struct ifaddrs *ifaddr, *ifa;
-    int family, s;
-    char host[40];
-
-    // get the list of interfaces
-    if (getifaddrs(&ifaddr) == -1) {
-        perror("getifaddrs");
-        return 1;
-    }
-
-    // loop through the list of interfaces
-    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr == NULL) {
-            continue;
-        }
-
-        // get the family (IPv4 or IPv6)
-        family = ifa->ifa_addr->sa_family;
-
-        // skip non-IP interfaces
-        if (family != AF_INET && family != AF_INET6) {
-            continue;
-        }
-
-        // get the IP address as a string
-        s = getnameinfo(ifa->ifa_addr, (family == AF_INET) ? sizeof(struct sockaddr_in) :
-                                       sizeof(struct sockaddr_in6),
-                        host, 40, NULL, 0, NI_NUMERICHOST);
-
-        if (s != 0) {
-            printf("getnameinfo() failed: %s\n", gai_strerror(s));
-            return 1;
-        }
-
-        // print the IP address
-        // printf("%s: %s\n", ifa->ifa_name, host);
-        if (strncmp(host, "192.", 4) == 0) {
-            strcpy(opts->source_ip, host);
-        }
-    }
-
-    freeifaddrs(ifaddr);
-}
-
-
 void options_init_client(struct options_client *opts) {
     memset(opts, 0, sizeof(struct options_client));
-//    get_src_ip(opts);
-//    opts->src_port = SOURCE_PORT;
-//    opts->dest_port = DESTINATION_PORT;
+    opts->dest_port = DESTINATION_PORT;
 }
 
 
@@ -99,11 +51,8 @@ void parse_arguments_client(int argc, char *argv[], struct options_client *opts)
                 strcpy(opts->file_name, optarg);
                 if (strlen(opts->file_name) == 0) {
                     puts("You need to supply a filename [-f | --file FILENAME]");
-                    cleanup_client(opts);
                     exit(1);
                 }
-//                else
-//                    create_txt_file(opts->file_name);
                 break;
             }
             default:
@@ -119,16 +68,15 @@ void confirm_client_info(struct options_client *opts) {
 
     if (opts->src_ip == 0 && opts->dest_ip == 0) {
         puts("You need to supply a source and destination address for client mode");
-        cleanup_client(opts);
         exit(1);
     }
     else {
-        printf("Source Host (THIS): %s\n", opts->source_ip);
-        printf("Destination Host:   %s\n", opts->destination_ip);
-        if(opts->src_port == 0) puts("Source Port:    random)\n");
-        else printf("Source Port:        %u\n",opts->src_port);
-        printf("Destination Port:   %u\n", opts->dest_port);
-        printf("Encoded Filename:   %s\n", opts->file_name);
+        printf("Packet Source:        %s\n", opts->source_ip);
+        printf("Packet Destination:   %s\n", opts->destination_ip);
+        if(opts->src_port == 0) puts("Source Port:          random\n");
+        else printf(  "Source Port:          %u\n", opts->src_port);
+        printf("Destination Port:     %u\n", opts->dest_port);
+        printf("Encoded Filename:     %s\n", opts->file_name);
         puts("[ Client Mode ]: Sending data ...");
     }
 }
@@ -148,7 +96,6 @@ void options_process_client(struct options_client *opts) {
 
     if ((input = fopen(opts->file_name, "rb")) == NULL) {
         printf("I cannot open the file %s for reading\n", opts->file_name);
-        cleanup_client(opts);
         exit(1);
     }
     else
@@ -187,7 +134,7 @@ void options_process_client(struct options_client *opts) {
             opts->client_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
             if (opts->client_socket == -1) {
                 printf( "socket() ERROR\n");
-                cleanup_client(opts);
+                close(opts->client_socket);
                 exit(1);
             }
 
@@ -198,11 +145,6 @@ void options_process_client(struct options_client *opts) {
             close(opts->client_socket);
         }
     fclose(input);
-}
-
-
-void cleanup_client(const struct options_client *opts) {
-    close(opts->client_socket);
 }
 
 
@@ -220,7 +162,6 @@ uint16_t calc_ip_checksum(struct iphdr *ip_header) {
     uint16_t *ptr = (uint16_t *)ip_header;
     int count = ip_header->ihl * 4;
 
-    // Initialize checksum field to 0
     ip_header->check = 0;
 
     while (count > 1) {
@@ -246,7 +187,6 @@ uint16_t calc_udp_checksum(struct udphdr *udp_header) {
 
     udp_header->uh_sum = 0;
 
-    // Calculate the checksum for the UDP header
     while (count > 1) {
         sum += *ptr++;
         count -= 2;
@@ -256,7 +196,6 @@ uint16_t calc_udp_checksum(struct udphdr *udp_header) {
         sum += *(uint8_t *)ptr;
     }
 
-    // Fold the 32-bit sum into 16 bits
     while (sum >> 16) {
         sum = (sum & 0xFFFF) + (sum >> 16);
     }

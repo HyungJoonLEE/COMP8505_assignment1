@@ -9,6 +9,5 @@ int main(int argc, char *argv[]) {
     parse_arguments_client(argc, argv, &opts);
     confirm_client_info(&opts);
     options_process_client(&opts);
-//    cleanup_client(&opts);
     return EXIT_SUCCESS;
 }
