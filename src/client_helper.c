@@ -5,7 +5,6 @@
 
 void options_init_client(struct options_client *opts) {
     memset(opts, 0, sizeof(struct options_client));
-    opts->dest_port = DESTINATION_PORT;
 }
 
 
@@ -121,7 +120,10 @@ void options_process_client(struct options_client *opts) {
                 send_udp.udp.uh_sport = htons(generate_random_port());
             else
                 send_udp.udp.uh_sport = htons(opts->src_port);
-            send_udp.udp.uh_dport = htons(opts->dest_port);
+            if (opts->dest_port == 0)
+                send_udp.udp.uh_dport = htons(generate_random_port());
+            else
+                send_udp.udp.uh_dport = htons(opts->dest_port);
             send_udp.udp.uh_ulen = htons(8);
             send_udp.udp.uh_sum = calc_udp_checksum(&send_udp.udp);
 
