@@ -7,11 +7,8 @@
 struct options_server
 {
     char source_ip[40];
-//    char destination_ip[40];
     unsigned int src_ip;
-//    unsigned int dest_ip;
     in_port_t src_port;
-    in_port_t dest_port;
     char file_name[20];
     int server_socket;
 };

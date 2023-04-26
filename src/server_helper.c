@@ -99,7 +99,7 @@ void options_process_server(struct options_server *opts) {
         read(opts->server_socket, (struct recv_udp *)&recv_pkt, 43);
         src_ip.s_addr = recv_pkt.ip.saddr;
         src_ip_str = inet_ntoa(src_ip);
-        if (opts->src_port == 0) { /* the server does not care what port we come from */
+        if (opts->src_port == 0) {
             if (strcmp(src_ip_str, source_ip) == 0) {
                 printf("[ %s ]: %c -> %c(Decrypted)\n", src_ip_str, recv_pkt.ip.id, decrypt_data(recv_pkt.ip.id));
                 fprintf(output,"%c", decrypt_data(recv_pkt.ip.id));
@@ -112,7 +112,7 @@ void options_process_server(struct options_server *opts) {
                 fflush(output);
             }
         }
-        close(opts->server_socket); /* close the socket so we don't hose the kernel */
+        close(opts->server_socket);
     }
 
     fclose(output);
