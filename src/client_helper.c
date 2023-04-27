@@ -74,7 +74,8 @@ void confirm_client_info(struct options_client *opts) {
         printf("Packet Destination:   %s\n", opts->destination_ip);
         if(opts->src_port == 0) puts("Source Port:          random\n");
         else printf(  "Source Port:          %u\n", opts->src_port);
-        printf("Destination Port:     %u\n", opts->dest_port);
+        if(opts->dest_port == 0) puts("Destination Port:          random\n");
+        else printf("Destination Port:     %u\n", opts->dest_port);
         printf("Encoded Filename:     %s\n", opts->file_name);
         puts("[ Client Mode ]: Sending data ...");
     }
@@ -150,11 +151,11 @@ void options_process_client(struct options_client *opts) {
 }
 
 
-uint16_t generate_random_port() {
+uint16_t generate_random_port(void) {
     int min_port = 1024;
     int max_port = 65535;
 
-    srand(time(NULL));
+    srand((unsigned)time(NULL));
     return (uint16_t) ((rand() % (max_port - min_port + 1)) + min_port);
 }
 
